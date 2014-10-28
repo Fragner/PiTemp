@@ -177,6 +177,7 @@ function createNotificationText($temp)
 	if ($notifiactionConfig['show_ip_address']) {
 		$message .= "IP Address: " . getServerAddress('eth0') . "\r\n";
 	}
-	
+
+	$message .= "\r\n Greetings from your friendly server:-)\r\n";
 	return $message;
 }
