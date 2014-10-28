@@ -1,10 +1,10 @@
-#!/usr/bin/env python
+#! /usr/bin/env python
 import plotly
 import os
 
 
 def update_temp(date,temp):
-        py = plotly.plotly(username='USER', key='KEY')
+        py = plotly.plotly(username='martin-fragner@utanet.at', key='7ew737sh9i')
         r =  py.plot(date,temp,
         filename='RPiTempCont',
         fileopt='extend',

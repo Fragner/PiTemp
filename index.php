@@ -12,7 +12,6 @@ $temperatureFile = file_get_contents('temperature.log');
 $regex = "/^((?:[0-9]{2,4}-?){3})T((?:[0-9]{2}:?){3}).*?;([0-9.]*$)/im";
 preg_match_all($regex, $temperatureFile, $result);
 
-
 // Prepare the values
 $values = $result[3];
 $floatValues = array();
@@ -26,8 +25,47 @@ foreach ($values as $value) {
 	
 	$floatValues[] = $floatValue;
 }
-$valuesLast24Hours = array_slice($floatValues, -96);
-$valuesLastWeek = array_slice($floatValues, -96*7);
+
+/* get the updatetime from config and calc base 24*60/update 
+ added by frama */
+$countsPerDay = 24*60/($config['updatetime']);
+
+/*
+echo "updatetime ".$config['updatetime'];
+#echo  "Eintr√§ge per Tag: ".$countsPerDay;
+$arrl = count($floatValues);
+echo "L‰nge: ".$arrl;
+echo " Inhalt: ".$floatValues[$arrl-1]." - ".$floatValues[$arrl-2];
+
+
+$times = $result[1];
+$timeValues = array();
+foreach ($times as $value) {
+        $timeValue = $value;
+
+        $timeValues[] = $timeValue;
+}
+$arrl = count($timeValues);
+echo " L‰nge: ".$arrl;
+echo " Inhalt: ".$timeValues[$arrl-1]." - ".$timeValues[$arrl-2];
+echo " Inhalt: ".$timeValues[$arrl-$countsPerDay ]." - ".$timeValues[$arrl-$countsPerDay];
+
+$times = $result[2];
+$timeValues = array();
+foreach ($times as $value) {
+        $timeValue = $value;
+
+        $timeValues[] = $timeValue;
+}
+$arrl = count($timeValues);
+echo " L‰nge: ".$arrl;
+echo " Inhalt: ".$timeValues[$arrl-1]." - ".$timeValues[$arrl-2];
+echo " Inhalt: ".$timeValues[$arrl-$countsPerDay ]." - ".$timeValues[$arrl-$countsPerDay];
+*/
+/* end of my changes */
+
+$valuesLast24Hours = array_slice($floatValues, -$countsPerDay);
+$valuesLastWeek = array_slice($floatValues, -$countsPerDay*7);
 
 // Merge date and time part together
 $labels = array_map(function($a, $b){
@@ -44,6 +82,8 @@ $points = array_map(function($a, $b){
 $average = average($floatValues);
 $lowest = getMin($floatValues);
 $highest = getMax($floatValues);
+//echo "Zaehler: ".count($floatValues);
+$actualTemp =  $floatValues[count($floatValues)-1];
 
 $average24Hours = average($valuesLast24Hours);
 $lowest24Hours = getMin($valuesLast24Hours);
@@ -59,7 +99,7 @@ $highestWeek = getMax($valuesLastWeek);
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Raspberry Pi Monitor</title>
+    <title>Raspberry Temperature</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="">
     <meta name="author" content="">
@@ -91,7 +131,7 @@ $highestWeek = getMax($valuesLastWeek);
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="brand" href="#">Raspberry Pi</a>
+          <a class="brand" href="#" >Raspberry Pi</a>
           <div class="nav-collapse collapse">
             <ul class="nav">
               <li class="active"><a href="#">Temperature</a></li>
@@ -107,6 +147,7 @@ $highestWeek = getMax($valuesLastWeek);
      <h3>Last 24 Hours</h3>
      	<div id="day" style="height:300px" class="span9"></div>
      	<div class="span2 well">
+     		<p>Actual: <strong class="pull-right"><?php echo $actualTemp?> C&deg;</strong></p>
      		<p>Average: <strong class="pull-right"><?php echo $average24Hours;?> C&deg;</strong></p>
      		<p>Lowest:	<strong class="pull-right"><?php echo $lowest24Hours?> C&deg;</strong></p>
      		<p>Highest: <strong class="pull-right"><?php echo $highest24Hours?> C&deg;</strong></p>
@@ -147,8 +188,9 @@ $highestWeek = getMax($valuesLastWeek);
     <?php 
    	
     // Prepare the data
-    $pointsDay = array_slice($points, -96);
-    $pointsWeek = array_slice($points, -672);
+    $pointsDay = array_slice($points, -$countsPerDay);
+    $pointsWeek = array_slice($points, -$countsPerDay*7);
+//echo "Test: ".json_encode($pointsDay);//[unixtimestamp, value]
     ?>
     
     <script type="text/javascript">
@@ -169,7 +211,7 @@ $highestWeek = getMax($valuesLastWeek);
 			},
 			tooltip: true,
 			tooltipOpts: {
-				content: "%y"
+				content: "%y - %x"
 			}
 		};
 
@@ -178,7 +220,6 @@ $highestWeek = getMax($valuesLastWeek);
 			data: <?php echo json_encode($pointsDay);?>
 		}];
 		$.plot($("#day"), dataDay, options);
-
 		var dataWeek = [{
 			color: "rgb(212,62, 48)",
 			data: <?php echo json_encode($pointsWeek);?>
