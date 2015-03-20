@@ -21,7 +21,7 @@ return  array(
 		 * The maximum temperature of the Pi. If the temperature raises 
 		 * above this level, a notification will be sent. 
 		 */
-		'max_temp' =>51.5,
+		'max_temp' =>57.0,
 
 		/**
 		 * Define if the IP address of the Raspberry Pi is added to the notification. 

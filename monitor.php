@@ -33,8 +33,7 @@ $local->actualValue2vz($temp);
 // Check if we should send a notification 
 $config = getConfig();
 $notificationConfig = $config['notification'];
-$maxTemp = $notificationConfig['max_temp'];
-
+$maxTemp = $notificationConfig['max_temp']; 
 if ((int)$temp >= $maxTemp) {
 	// Temp is too high! Send notification!
 	if ($notificationConfig['enable_email']) {

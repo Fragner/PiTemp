@@ -67,7 +67,7 @@ function getMax($values) {
 function sendEmailNotification($temp, $addresses = array())
 {
 	$to = join(",", $addresses);
-	$subject = "PiTemp Notification";
+	$subject = "PiTemp Notification ".$temp."C";
 	$message = createNotificationText($temp);
 	$headers = "From: PiTemp <notification@pitemp.local> \r\n";
 	
