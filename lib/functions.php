@@ -3,6 +3,7 @@
 /**
  * Merges the application and the local config and returns it.
  */
+$m_temp;
 function getConfig()
 {
 	$config = include dirname(__FILE__) . '/../config.php';
@@ -66,13 +67,19 @@ function getMax($values) {
  */
 function sendEmailNotification($temp, $addresses = array())
 {
+	global $m_temp;
+	$m_temp = $temp;
 	$to = join(",", $addresses);
 	$subject = "PiTemp Notification ".$temp."C";
 	$message = createNotificationText($temp);
 	$headers = "From: PiTemp <notification@pitemp.local> \r\n";
 	
 	// Send the mail!
-	mail($to, $subject, $message, $headers);
+	//mail($to, $subject, $message, $headers);
+	
+	//send mail with attachement
+	$attachement = topToLog();	
+	sendMailWithAttachement($to, $subject, $message, $headers, $attachement);
 }
 
 /**
@@ -180,4 +187,90 @@ function createNotificationText($temp)
 
 	$message .= "\r\n Greetings from your friendly server:-)\r\n";
 	return $message;
+}
+/**
+
+	http://eureka.ykyuen.info/2010/02/16/php-send-attachmemt-with-php-mail/
+*/
+function sendMailWithAttachement($to, $subject, $message, $headers, $attachement)
+{
+/* Email Details */
+  $mail_to = $to;
+  $from_mail = "frama1038@gmail.com";
+  $from_name = "pi@raspberry";
+  $reply_to = "frama1038@gmail.com";
+  //$subject = "<email subject>";
+  //$message = "<email content>";
+
+/* Attachment File */
+  $file_name = "top.txt";
+//  $path = "<relative path/absolute path which contains the attachment>"; 
+  // Read the file content
+  $file = $attachement;
+  $file_size = filesize($file);
+  $handle = fopen($file, "r");
+  $content = fread($handle, $file_size);
+  fclose($handle);
+  $content = chunk_split(base64_encode($content));
+ 
+/* Set the email header */
+  // Generate a boundary
+  $boundary = md5(uniqid(time()));
+  
+  // Email header
+  $header = "From: ".$from_name." <".$from_mail.">".PHP_EOL;
+  $header .= "Reply-To: ".$reply_to.PHP_EOL;
+  $header .= "MIME-Version: 1.0".PHP_EOL;
+  
+  // Multipart wraps the Email Content and Attachment
+  $header .= "Content-Type: multipart/mixed; boundary=\"".$boundary."\"".PHP_EOL;
+  $header .= "This is a multi-part message in MIME format.".PHP_EOL;
+  $header .= "--".$boundary.PHP_EOL;
+  
+  // Email content
+  // Content-type can be text/plain or text/html
+// Content-type can be text/plain or text/html
+  $header .= "Content-type:text/plain; charset=iso-8859-1".PHP_EOL;
+  $header .= "Content-Transfer-Encoding: 7bit".PHP_EOL.PHP_EOL;
+  $header .= "$message".PHP_EOL;
+  $header .= "--".$boundary.PHP_EOL;
+  
+  // Attachment
+  // Edit content type for different file extensions
+  $header .= "Content-Type: application/txt; name=\"".$file_name."\"".PHP_EOL;
+  $header .= "Content-Transfer-Encoding: base64".PHP_EOL;
+  $header .= "Content-Disposition: attachment; filename=\"".$file_name."\"".PHP_EOL.PHP_EOL;
+  $header .= $content.PHP_EOL;
+  $header .= "--".$boundary."--";
+
+
+//  mail($mail_to, $subject, "", $header);
+  
+  /**
+  send mail and check if it could sent
+	*/ 
+  if (mail($mail_to, $subject, "", $header)) {  
+	global $m_temp;
+	$date =date("Y-m-d H:i:s");
+	$text = $date." - PiTemp:= $m_temp - mail couldn't sent!\n";
+	$logfile = '/var/log/myLogs/PiTempAboveLimit';
+	$handle = @fopen($logfile, 'a') ;
+	fwrite($handle, $text);
+	fclose($handle);
+  }
+}
+
+/**
+	write the summary of 'top' to a file and returns the path to the writen file
+	@return path of the writen file
+*/
+function topToLog()
+{
+	$filename="/var/log/myLogs/top.txt";
+	$date =date("Y-m-d H:i:s");
+	$datei = fopen($filename, "w+");
+	fwrite ($datei, $date. "\n");
+	fclose ($datei);
+	exec("top -n1 -b >  $filename");
+	return $filename;
 }
