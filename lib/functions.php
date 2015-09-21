@@ -170,7 +170,7 @@ function createNotificationText($temp)
 	$config = getConfig();
 	$notifiactionConfig = $config['notification'];
 	
-	$message = "Your Raspberry Pi's temperature raised above your defined maximum temperature. \r\n\r\n";
+	$message = "Your Raspberry Pi's temperature raised above your defined maximum temperature. \n\n";
 	
 	// Add Temp
 	$message .= "Current temperature: " . $temp . "C\r\n";
@@ -192,64 +192,46 @@ function createNotificationText($temp)
 
 	http://eureka.ykyuen.info/2010/02/16/php-send-attachmemt-with-php-mail/
 */
-function sendMailWithAttachement($to, $subject, $message, $headers, $attachement)
+function sendMailWithAttachement($mail_to, $subject, $message, $headers, $attachement)
 {
 /* Email Details */
-  $mail_to = $to;
   $from_mail = "frama1038@gmail.com";
   $from_name = "pi@raspberry";
-  $reply_to = "frama1038@gmail.com";
-  //$subject = "<email subject>";
-  //$message = "<email content>";
+  $replyto = "frama1038@gmail.com";
+  $files = "top.txt";
+  $path = "/var/log/myLogs/";
+  
+  /*****************/
+  	$filename  = $files;
+	$file      = $path.$filename;
+	$file_size = filesize($file);
+	$handle    = fopen($file, "r");
+	$content   = fread($handle, $file_size);
+	fclose($handle);
 
-/* Attachment File */
-  $file_name = "top.txt";
-//  $path = "<relative path/absolute path which contains the attachment>"; 
-  // Read the file content
-  $file = $attachement;
-  $file_size = filesize($file);
-  $handle = fopen($file, "r");
-  $content = fread($handle, $file_size);
-  fclose($handle);
-  $content = chunk_split(base64_encode($content));
- 
-/* Set the email header */
-  // Generate a boundary
-  $boundary = md5(uniqid(time()));
-  
-  // Email header
-  $header = "From: ".$from_name." <".$from_mail.">".PHP_EOL;
-  $header .= "Reply-To: ".$reply_to.PHP_EOL;
-  $header .= "MIME-Version: 1.0".PHP_EOL;
-  
-  // Multipart wraps the Email Content and Attachment
-  $header .= "Content-Type: multipart/mixed; boundary=\"".$boundary."\"".PHP_EOL;
-  $header .= "This is a multi-part message in MIME format.".PHP_EOL;
-  $header .= "--".$boundary.PHP_EOL;
-  
-  // Email content
-  // Content-type can be text/plain or text/html
-// Content-type can be text/plain or text/html
-  $header .= "Content-type:text/plain; charset=iso-8859-1".PHP_EOL;
-  $header .= "Content-Transfer-Encoding: 7bit".PHP_EOL.PHP_EOL;
-  $header .= "$message".PHP_EOL;
-  $header .= "--".$boundary.PHP_EOL;
-  
-  // Attachment
-  // Edit content type for different file extensions
-  $header .= "Content-Type: application/txt; name=\"".$file_name."\"".PHP_EOL;
-  $header .= "Content-Transfer-Encoding: base64".PHP_EOL;
-  $header .= "Content-Disposition: attachment; filename=\"".$file_name."\"".PHP_EOL.PHP_EOL;
-  $header .= $content.PHP_EOL;
-  $header .= "--".$boundary."--";
-
-
-//  mail($mail_to, $subject, "", $header);
-  
+	$content = chunk_split(base64_encode($content));
+	$uid     = md5(uniqid(time()));
+	$name    = basename($file);				
+	$header    = "From: " . $from_name . " <" . $from_mail . ">\n";
+	$header .= "Reply-To: " . $replyto . "\n";
+	$header .= "MIME-Version: 1.0\n";
+	$header .= "Content-Type: multipart/mixed; boundary=\"" . $uid . "\"\n\n";
+	
+	$emessage = "--" . $uid . "\n";
+	$emessage .= "Content-type:text/html; charset=iso-8859-1\n";
+	$emessage .= "Content-Transfer-Encoding: 7bit\n\n";
+	$emessage .= $message . "\n\n";
+	$emessage .= "--" . $uid . "\n";
+	$emessage .= "Content-Type: application/octet-stream; name=\"" . $filename . "\"\n"; // use different content types here
+	$emessage .= "Content-Transfer-Encoding: base64\n";
+	$emessage .= "Content-Disposition: attachment; filename=\"" . $filename . "\"\n\n";
+	$emessage .= $content . "\n\n";
+	$emessage .= "--" . $uid . "--";
+	     
   /**
   send mail and check if it could sent
-	*/ 
-  if (mail($mail_to, $subject, "", $header)) {  
+	*/   
+  if (mail($mail_to, $subject, $emessage, $header)) {  
 	global $m_temp;
 	$date =date("Y-m-d H:i:s");
 	$text = $date." - PiTemp:= $m_temp - mail couldn't sent!\n";
@@ -257,7 +239,7 @@ function sendMailWithAttachement($to, $subject, $message, $headers, $attachement
 	$handle = @fopen($logfile, 'a') ;
 	fwrite($handle, $text);
 	fclose($handle);
-  }
+  } 	
 }
 
 /**
